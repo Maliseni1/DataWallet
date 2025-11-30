@@ -1,0 +1,13 @@
+{
+  // 1. Tell VS Code to associate all .css files with the Tailwind extension
+  "files.associations": {
+    "*.css": "tailwindcss"
+  },
+  
+  // 2. Turn OFF the built-in linter that is causing the yellow lines
+  "css.validate": false,
+  "scss.validate": false,
+  
+  // 3. Keep the old rule just in case (this is now a fallback)
+  "css.lint.unknownAtRules": "ignore"
+}
