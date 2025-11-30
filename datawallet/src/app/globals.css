@@ -1,0 +1,27 @@
+@import "tailwindcss";
+
+/* TAILWIND v4 THEME CONFIGURATION
+   We define the colors here so the compiler sees them immediately.
+*/
+@theme {
+  /* ZedMobile Colors */
+  --color-zed: #6366F1;
+  --color-zed-light: #A5B4FC;
+  --color-zed-dark: #4F46E5;
+
+  /* MTN Colors */
+  --color-mtn: #FACC15;
+  --color-mtn-light: #FDE047;
+  --color-mtn-dark: #EAB308;
+
+  /* Airtel Colors */
+  --color-airtel: #EF4444;
+  --color-airtel-light: #FCA5A5;
+  --color-airtel-dark: #DC2626;
+}
+
+/* Default body styles */
+:root {
+  background-color: #f3f4f6; /* bg-gray-100 */
+  color: #111827; /* text-gray-900 */
+}
