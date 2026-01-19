@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation'; 
 import type { AccountData } from '@/app/lib/data';
 import { useTheme } from './providers'; 
-import { PaymentModal } from './components/PaymentModal'; // Import Modal
+import { PaymentModal } from './components/PaymentModal';
 
 // --- Toast Notification Component ---
 function Toast({ message, onClose }: { message: string; onClose: () => void }) {
@@ -379,6 +379,32 @@ export default function Home() {
                       <span className={`h-1.5 w-1.5 rounded-full ${currentTheme.accent}`}></span>
                       Available
                    </span>
+                </div>
+              </div>
+
+              {/* Insights Chart (NEW) */}
+              <div className={`rounded-4xl p-6 border ${darkModeEnabled ? 'bg-gray-800/50 border-gray-700' : 'bg-white border-gray-100'}`}>
+                <h3 className={`text-[10px] font-bold uppercase tracking-widest mb-4 ${darkModeEnabled ? 'text-gray-400' : 'text-gray-400'}`}>Usage Trends (Last 7 Days)</h3>
+                <div className="flex items-end justify-between gap-2 h-24">
+                  {[40, 60, 20, 80, 50, 70, 90].map((height, i) => (
+                    <div key={i} className="flex flex-col items-center gap-2 w-full group">
+                      <div className="relative w-full flex items-end h-full">
+                        <div 
+                          className={`w-full rounded-t-sm transition-all duration-500 ${darkModeEnabled ? 'bg-gray-700 group-hover:bg-gray-600' : 'bg-gray-100 group-hover:bg-indigo-100'}`} 
+                          style={{ height: `${height}%` }}
+                        >
+                           <div className={`w-full rounded-t-sm transition-all duration-1000 delay-100 ${currentTheme.accent} opacity-80`} style={{ height: '100%' }}></div>
+                        </div>
+                        {/* Tooltip */}
+                        <div className="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-black text-white text-[10px] font-bold px-2 py-1 rounded pointer-events-none whitespace-nowrap">
+                          {height * 10} MB
+                        </div>
+                      </div>
+                      <span className={`text-[8px] font-bold uppercase ${darkModeEnabled ? 'text-gray-600' : 'text-gray-400'}`}>
+                        {['M','T','W','T','F','S','S'][i]}
+                      </span>
+                    </div>
+                  ))}
                 </div>
               </div>
 
