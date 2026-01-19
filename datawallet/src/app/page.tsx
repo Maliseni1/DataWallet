@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation'; 
 import type { AccountData } from '@/app/lib/data';
-// FIX: Import useTheme from './providers', NOT './context/ThemeContext'
 import { useTheme } from './providers'; 
+import { PaymentModal } from './components/PaymentModal'; // Import Modal
 
 // --- Toast Notification Component ---
 function Toast({ message, onClose }: { message: string; onClose: () => void }) {
@@ -154,7 +154,7 @@ const ALL_NOTIFICATIONS: Notification[] = [
 ];
 
 export default function Home() {
-  const { darkModeEnabled } = useTheme(); // Consume Theme Context
+  const { darkModeEnabled } = useTheme();
   const [operator, setOperator] = useState<'zedmobile' | 'mtn' | 'airtel'>('zedmobile');
   const [data, setData] = useState<AccountData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -163,6 +163,10 @@ export default function Home() {
   
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  // Payment Modal State
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [paymentConfig, setPaymentConfig] = useState({ title: '', amount: '', type: 'data' as 'data' | 'money', action: () => {} });
   
   const currentNotifications = ALL_NOTIFICATIONS.filter(n => n.operator === operator);
   const hasUnread = currentNotifications.length > 0;
@@ -208,24 +212,66 @@ export default function Home() {
     fetchData();
   }, [operator]);
 
-  const handleGift = async () => {
+  // Logic to execute AFTER modal confirmation
+  const executeGift = () => {
     if (!data) return;
-    const amount = 500;
-    if (data.walletBalanceMB < amount) { showToast("Insufficient balance!"); return; }
-    showToast("Processing gift...");
-    await new Promise(resolve => setTimeout(resolve, 800));
-    setData({ ...data, walletBalanceMB: data.walletBalanceMB - amount });
-    showToast(`Successfully gifted ${amount} MB!`);
+    setData({ ...data, walletBalanceMB: data.walletBalanceMB - 500 });
+    showToast(`Successfully gifted 500 MB!`);
   };
 
-  const handleApply = async () => {
+  const executeApply = () => {
     if (!data || !data.bundle) return;
-    const amount = 250;
-    if (data.walletBalanceMB < amount) { showToast("Insufficient balance!"); return; }
-    showToast("Applying to bundle...");
-    await new Promise(resolve => setTimeout(resolve, 800));
-    setData({ ...data, walletBalanceMB: data.walletBalanceMB - amount, bundle: { ...data.bundle, remainingMB: data.bundle.remainingMB + amount } });
-    showToast(`Applied ${amount} MB to your bundle!`);
+    setData({
+      ...data,
+      walletBalanceMB: data.walletBalanceMB - 250,
+      bundle: { ...data.bundle, remainingMB: data.bundle.remainingMB + 250 }
+    });
+    showToast(`Applied 250 MB to your bundle!`);
+  };
+
+  // Button Click Handlers -> Open Modal
+  const handleGiftClick = () => {
+    if (!data) return;
+    if (data.walletBalanceMB < 500) { showToast("Insufficient balance!"); return; }
+    
+    setPaymentConfig({
+      title: 'Gift Data',
+      amount: '500 MB',
+      type: 'data',
+      action: executeGift
+    });
+    setIsPaymentModalOpen(true);
+  };
+
+  const handleApplyClick = () => {
+    if (!data || !data.bundle) return;
+    if (data.walletBalanceMB < 250) { showToast("Insufficient balance!"); return; }
+
+    setPaymentConfig({
+      title: 'Apply to Bundle',
+      amount: '250 MB',
+      type: 'data',
+      action: executeApply
+    });
+    setIsPaymentModalOpen(true);
+  };
+
+  // Handle "Purchase Bundle" click (Empty State)
+  const handlePurchaseClick = () => {
+    setPaymentConfig({
+      title: 'Purchase Bundle',
+      amount: 'K50.00',
+      type: 'money',
+      action: () => {
+        // Optimistic update for purchase: add a fake bundle
+        setData(prev => prev ? ({
+          ...prev,
+          bundle: { name: "New 5GB Bundle", remainingMB: 5000, expiryDays: 30 }
+        }) : null);
+        showToast("Bundle purchased successfully!");
+      }
+    });
+    setIsPaymentModalOpen(true);
   };
 
   const themeConfig = {
@@ -259,7 +305,15 @@ export default function Home() {
       
       {toastMsg && <Toast message={toastMsg} onClose={() => setToastMsg(null)} />}
 
-      {/* Main Container */}
+      <PaymentModal 
+        isOpen={isPaymentModalOpen}
+        onClose={() => setIsPaymentModalOpen(false)}
+        onConfirm={async () => { await new Promise(r => setTimeout(r, 1500)); paymentConfig.action(); }}
+        title={paymentConfig.title}
+        amount={paymentConfig.amount}
+        type={paymentConfig.type}
+      />
+
       <div className={`w-full max-w-lg overflow-hidden rounded-4xl backdrop-blur-2xl shadow-2xl ring-1 transition-all duration-500 relative min-h-[720px] flex flex-col ${darkModeEnabled ? 'bg-gray-800/90 ring-white/10 border-gray-700' : 'bg-white/90 ring-white/60 border border-white/40'}`}>
         
         <MobileHeader theme={data?.theme || 'zed'} onMenuClick={handleMenuClick} onBellClick={handleBellClick} showDot={hasUnread} />
@@ -358,7 +412,7 @@ export default function Home() {
                     </div>
                   </div>
                 ) : (
-                  <div className={`flex flex-col items-center justify-center rounded-4xl border-2 border-dashed p-8 text-center transition-all duration-300 cursor-pointer group ${darkModeEnabled ? 'border-gray-600 bg-gray-700/20 hover:bg-gray-700/40' : 'border-gray-200/80 bg-white/50 hover:bg-white hover:border-gray-300'}`} onClick={() => showToast("Redirecting to bundle store...")}>
+                  <div className={`flex flex-col items-center justify-center rounded-4xl border-2 border-dashed p-8 text-center transition-all duration-300 cursor-pointer group ${darkModeEnabled ? 'border-gray-600 bg-gray-700/20 hover:bg-gray-700/40' : 'border-gray-200/80 bg-white/50 hover:bg-white hover:border-gray-300'}`} onClick={handlePurchaseClick}>
                     <div className={`h-14 w-14 rounded-full flex items-center justify-center mb-4 transition-all ${darkModeEnabled ? 'bg-gray-700 text-gray-400 group-hover:bg-gray-600 group-hover:text-gray-300' : 'bg-gray-100 text-gray-400 group-hover:scale-110 group-hover:bg-gray-200 group-hover:text-gray-600'}`}>
                        <span className="text-3xl pb-1 font-light">+</span>
                     </div>
@@ -371,7 +425,7 @@ export default function Home() {
               {/* Action Buttons */}
               <div className="grid grid-cols-2 gap-4">
                 <button
-                  onClick={handleGift}
+                  onClick={handleGiftClick}
                   className={`group relative overflow-hidden flex flex-col items-center justify-center rounded-4xl p-6 text-white transition-all duration-300 hover:-translate-y-1 hover:shadow-xl active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 disabled:shadow-none ${currentTheme.button}`}
                   disabled={data.walletBalanceMB <= 0}
                 >
@@ -385,7 +439,7 @@ export default function Home() {
                 </button>
 
                 <button
-                  onClick={handleApply}
+                  onClick={handleApplyClick}
                   className={`group flex flex-col items-center justify-center rounded-4xl border p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 ${darkModeEnabled ? 'bg-gray-700/30 border-gray-600 text-gray-300 hover:border-gray-500 hover:shadow-black/20' : 'bg-white border-gray-100 text-gray-600 hover:border-gray-200 hover:shadow-gray-200/50'}`}
                   disabled={!data.bundle}
                 >
